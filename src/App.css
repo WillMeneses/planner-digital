@@ -1,0 +1,22 @@
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1rem;
+}
+
+.placeholder-view {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background-color: white;
+    border-radius: var(--radius-lg);
+    color: var(--text-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.view-container {
+    height: 100%;
+    width: 100%;
+}
