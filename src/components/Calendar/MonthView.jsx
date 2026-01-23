@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import './Calendar.css';
 
-const MonthView = ({ tasks = [], onAddClick, onMoveTask }) => {
+const MonthView = ({ tasks = [], onAddClick, onMoveTask, onEditTask }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const getDaysInMonth = (date) => {

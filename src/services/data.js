@@ -13,7 +13,10 @@ export const DataService = {
         return await db.tasks.update(Number(taskId), updates);
     },
 
-
+    // Delete a task
+    deleteTask: async (taskId) => {
+        return await db.tasks.delete(Number(taskId));
+    },
 
     // Toggle completion status (requires fetching first or just passing new status)
     toggleTaskCompletion: async (taskId, currentStatus) => {

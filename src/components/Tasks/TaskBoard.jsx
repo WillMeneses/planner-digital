@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CheckCircle2, Circle, MoreVertical } from 'lucide-react';
 import './Tasks.css';
 
-const TaskBoard = ({ tasks, onToggleTask }) => {
+const TaskBoard = ({ tasks, onToggleTask, onEditTask }) => {
     const [filter, setFilter] = useState('all');
 
     const getFilteredTasks = () => {
@@ -62,6 +62,7 @@ const TaskBoard = ({ tasks, onToggleTask }) => {
                         key={task.id}
                         className={`task-card ${task.completed ? 'completed' : ''}`}
                         draggable="true" // Enable Drag
+                        onClick={() => onEditTask(task)}
                         onDragStart={(e) => {
                             e.dataTransfer.setData('taskId', task.id);
                         }}

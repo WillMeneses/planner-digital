@@ -18,6 +18,7 @@ function App() {
     const [authView, setAuthView] = useState('login'); // 'login' or 'register'
     const [currentView, setCurrentView] = useState('calendar');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
 
     // Reactive tasks query
     const tasks = useLiveQuery(
@@ -46,11 +47,30 @@ function App() {
         }
     };
 
-    const addTask = async (newTask) => {
-        if (user) {
-            await DataService.addTask(user.id, newTask);
-            setIsModalOpen(false);
+    const openEditModal = (task) => {
+        setEditingTask(task);
+        setIsModalOpen(true);
+    };
+
+    const handleSaveTask = async (taskData) => {
+        if (!user) return;
+
+        if (taskData.id) {
+            // Update existing
+            await DataService.updateTask(taskData.id, taskData);
+        } else {
+            // Create new
+            await DataService.addTask(user.id, taskData);
         }
+        setIsModalOpen(false);
+        setEditingTask(null);
+    };
+
+    const handleDeleteTask = async (taskId) => {
+        if (!user) return;
+        await DataService.deleteTask(taskId);
+        setIsModalOpen(false);
+        setEditingTask(null);
     };
 
     const moveTask = async (taskId, newDate, newTime) => {
@@ -60,12 +80,13 @@ function App() {
     const renderContent = () => {
         const commonProps = {
             tasks,
-            onMoveTask: moveTask
+            onMoveTask: moveTask,
+            onEditTask: openEditModal
         };
 
         switch (currentView) {
             case 'calendar':
-                return <MonthView {...commonProps} onAddClick={() => setIsModalOpen(true)} />;
+                return <MonthView {...commonProps} onAddClick={() => { setEditingTask(null); setIsModalOpen(true); }} />;
             case 'week':
                 return <WeekView {...commonProps} />;
             case 'day':
@@ -73,7 +94,7 @@ function App() {
             case 'dashboard':
                 return <DayView {...commonProps} />;
             case 'tasks':
-                return <TaskBoard tasks={tasks} onToggleTask={toggleTask} />;
+                return <TaskBoard tasks={tasks} onToggleTask={toggleTask} onEditTask={openEditModal} />;
             case 'settings':
                 return (
                     <div className="placeholder-view">
@@ -121,7 +142,7 @@ function App() {
         <MainLayout
             currentView={currentView}
             onViewChange={setCurrentView}
-            onAddClick={() => setIsModalOpen(true)}
+            onAddClick={() => { setEditingTask(null); setIsModalOpen(true); }}
             userName={user.name}
         >
             <div className="animate-fade-in view-container">
@@ -130,8 +151,10 @@ function App() {
 
             <TaskModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={addTask}
+                onClose={() => { setIsModalOpen(false); setEditingTask(null); }}
+                onSave={handleSaveTask}
+                onDelete={handleDeleteTask}
+                taskToEdit={editingTask}
             />
         </MainLayout>
     );

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './Calendar.css';
 
-const WeekView = ({ tasks = [], onMoveTask }) => {
+const WeekView = ({ tasks = [], onMoveTask, onEditTask }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const getStartOfWeek = (date) => {

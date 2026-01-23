@@ -1,12 +1,28 @@
-import React, { useState } from 'react';
-import { X, Calendar as CalendarIcon, Clock, Tag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Calendar as CalendarIcon, Clock, Tag, Trash2 } from 'lucide-react';
 import './TaskModal.css';
 
-const TaskModal = ({ isOpen, onClose, onSave }) => {
+const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit }) => {
     const [title, setTitle] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [time, setTime] = useState('10:00');
     const [category, setCategory] = useState('Trabalho');
+
+    useEffect(() => {
+        if (isOpen) {
+            if (taskToEdit) {
+                setTitle(taskToEdit.title);
+                setDate(taskToEdit.date);
+                setTime(taskToEdit.time);
+                setCategory(taskToEdit.category);
+            } else {
+                setTitle('');
+                setDate(new Date().toISOString().split('T')[0]);
+                setTime('10:00');
+                setCategory('Trabalho');
+            }
+        }
+    }, [isOpen, taskToEdit]);
 
     if (!isOpen) return null;
 
@@ -15,25 +31,35 @@ const TaskModal = ({ isOpen, onClose, onSave }) => {
         if (!title.trim()) return;
 
         onSave({
+            id: taskToEdit ? taskToEdit.id : undefined,
             title,
             date,
             time,
             category,
-            completed: false
+            completed: taskToEdit ? taskToEdit.completed : false
         });
+    };
 
-        // Reset form
-        setTitle('');
-        setTime('10:00');
-        setCategory('Trabalho');
-        onClose();
+    const handleDelete = () => {
+        if (taskToEdit && onDelete) {
+            if (window.confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                onDelete(taskToEdit.id);
+            }
+        }
     };
 
     return (
         <div className="modal-overlay animate-fade-in" onClick={onClose}>
             <div className="modal-content animate-slide-up" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>Nova Tarefa</h2>
+                    <div className="modal-actions">
+                        <h2>{taskToEdit ? 'Editar Tarefa' : 'Nova Tarefa'}</h2>
+                        {taskToEdit && onDelete && (
+                            <button type="button" className="btn-icon-danger" onClick={handleDelete} title="Excluir tarefa">
+                                <Trash2 size={20} />
+                            </button>
+                        )}
+                    </div>
                     <button className="close-btn" onClick={onClose}>
                         <X size={24} />
                     </button>
@@ -89,7 +115,7 @@ const TaskModal = ({ isOpen, onClose, onSave }) => {
 
                     <div className="modal-footer">
                         <button type="button" className="btn-cancel" onClick={onClose}>Cancelar</button>
-                        <button type="submit" className="btn-save">Criar Tarefa</button>
+                        <button type="submit" className="btn-save">{taskToEdit ? 'Salvar Alterações' : 'Criar Tarefa'}</button>
                     </div>
                 </form>
             </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './Calendar.css';
 
-const DayView = ({ tasks = [], onMoveTask }) => {
+const DayView = ({ tasks = [], onMoveTask, onEditTask }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     // Hours from 6:00 to 23:00
