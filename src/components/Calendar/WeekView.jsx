@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './Calendar.css';
 
-const WeekView = ({ tasks = [], onMoveTask, onEditTask }) => {
+const WeekView = ({ tasks = [], categories = [], onMoveTask, onEditTask }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const getStartOfWeek = (date) => {
@@ -109,17 +109,27 @@ const WeekView = ({ tasks = [], onMoveTask, onEditTask }) => {
                                         }
                                     }}
                                 >
-                                    {dayTasks.map(t => (
-                                        <div
-                                            key={t.id}
-                                            className="mini-event"
-                                            title={t.title}
-                                            style={{ cursor: 'pointer' }}
-                                            onClick={(e) => { e.stopPropagation(); onEditTask && onEditTask(t); }}
-                                        >
-                                            <span className="mini-event-title">{t.title}</span>
-                                        </div>
-                                    ))}
+                                    {dayTasks.map(t => {
+                                        const cat = categories.find(c => c.name === t.category);
+                                        const color = cat ? cat.color : '#3b82f6';
+
+                                        return (
+                                            <div
+                                                key={t.id}
+                                                className="mini-event"
+                                                title={t.title}
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    backgroundColor: `${color}80`, // 50% opacity
+                                                    borderLeft: `3px solid ${color}`,
+                                                    color: 'var(--text-primary)'
+                                                }}
+                                                onClick={(e) => { e.stopPropagation(); onEditTask && onEditTask(t); }}
+                                            >
+                                                <span className="mini-event-title" style={{ fontWeight: 600 }}>{t.title}</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             );
                         })}

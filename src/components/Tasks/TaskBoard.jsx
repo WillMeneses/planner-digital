@@ -67,7 +67,13 @@ const TaskBoard = ({ tasks, onToggleTask, onEditTask }) => {
                             e.dataTransfer.setData('taskId', task.id);
                         }}
                     >
-                        <button className="check-btn" onClick={() => onToggleTask(task.id)}>
+                        <button
+                            className="check-btn"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleTask(task.id);
+                            }}
+                        >
                             {task.completed ? <CheckCircle2 color="var(--accent-color)" /> : <Circle color="var(--text-secondary)" />}
                         </button>
                         <div className="task-content">

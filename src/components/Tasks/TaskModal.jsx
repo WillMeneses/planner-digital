@@ -1,12 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar as CalendarIcon, Clock, Tag, Trash2 } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Clock, Tag, Trash2, Plus, Check, Repeat } from 'lucide-react';
 import './TaskModal.css';
 
-const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit }) => {
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db';
+
+const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit, categories = [], onAddCategory }) => {
     const [title, setTitle] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [time, setTime] = useState('10:00');
     const [category, setCategory] = useState('Trabalho');
+    const [recurring, setRecurring] = useState('none');
+    const [isAddingCategory, setIsAddingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+
+    // Subtasks State (Local management before save)
+    const [subtasks, setSubtasks] = useState([]);
+    const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
+    // Fetch existing subtasks when editing
+    const existingSubtasks = useLiveQuery(
+        () => taskToEdit ? db.subtasks.where('taskId').equals(taskToEdit.id).toArray() : [],
+        [taskToEdit]
+    );
+
+    // Sync local state with DB when opening edit
+    useEffect(() => {
+        if (isOpen && existingSubtasks) {
+            setSubtasks(existingSubtasks);
+        } else if (isOpen && !taskToEdit) {
+            setSubtasks([]);
+        }
+    }, [isOpen, existingSubtasks, taskToEdit]);
 
     useEffect(() => {
         if (isOpen) {
@@ -15,11 +41,13 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit }) => {
                 setDate(taskToEdit.date);
                 setTime(taskToEdit.time);
                 setCategory(taskToEdit.category);
+                setRecurring(taskToEdit.recurring || 'none');
             } else {
                 setTitle('');
                 setDate(new Date().toISOString().split('T')[0]);
                 setTime('10:00');
                 setCategory('Trabalho');
+                setRecurring('none');
             }
         }
     }, [isOpen, taskToEdit]);
@@ -36,8 +64,28 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit }) => {
             date,
             time,
             category,
+            recurring,
             completed: taskToEdit ? taskToEdit.completed : false
-        });
+        }, subtasks);
+    };
+
+    const handleAddSubtask = (e) => {
+        e.preventDefault(); // Stop form submit
+        if (newSubtaskTitle.trim()) {
+            setSubtasks([...subtasks, { title: newSubtaskTitle, completed: false }]);
+            setNewSubtaskTitle('');
+        }
+    };
+
+    const toggleSubtask = (index) => {
+        const updated = [...subtasks];
+        updated[index] = { ...updated[index], completed: !updated[index].completed };
+        setSubtasks(updated);
+    };
+
+    const removeSubtask = (index) => {
+        const updated = subtasks.filter((_, i) => i !== index);
+        setSubtasks(updated);
     };
 
     const handleDelete = () => {
@@ -97,19 +145,133 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit }) => {
                         </div>
                     </div>
 
+                    <div className="form-row">
+                        <div className="input-group full-width">
+                            <label><Repeat size={16} /> Repetição</label>
+                            <select
+                                value={recurring}
+                                onChange={(e) => setRecurring(e.target.value)}
+                                className="custom-select"
+                            >
+                                <option value="none">Não repete</option>
+                                <option value="daily">Diariamente</option>
+                                <option value="weekly">Semanalmente</option>
+                                <option value="monthly">Mensalmente</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div className="form-group">
                         <label><Tag size={16} /> Categoria</label>
                         <div className="category-select">
-                            {['Trabalho', 'Pessoal', 'Saúde', 'Estudos'].map(cat => (
+                            {categories.map(cat => (
                                 <button
-                                    key={cat}
+                                    key={cat.id}
                                     type="button"
-                                    className={`category-chip ${category === cat ? 'selected' : ''}`}
-                                    onClick={() => setCategory(cat)}
+                                    className={`category-chip ${category === cat.name ? 'selected' : ''}`}
+                                    onClick={() => setCategory(cat.name)}
+                                    style={{
+                                        '--cat-color': cat.color,
+                                        borderColor: category === cat.name ? cat.color : 'transparent',
+                                        backgroundColor: category === cat.name ? `${cat.color}20` : 'var(--bg-secondary)',
+                                        color: category === cat.name ? cat.color : 'var(--text-secondary)'
+                                    }}
                                 >
-                                    {cat}
+                                    {cat.name}
                                 </button>
                             ))}
+
+                            {!isAddingCategory ? (
+                                <button
+                                    type="button"
+                                    className="category-chip add-new"
+                                    onClick={() => setIsAddingCategory(true)}
+                                    style={{ border: '1px dashed var(--text-tertiary)', color: 'var(--text-tertiary)' }}
+                                >
+                                    <Plus size={14} /> Nova
+                                </button>
+                            ) : (
+                                <div className="add-category-form animate-fade-in">
+                                    <input
+                                        type="text"
+                                        placeholder="Nome"
+                                        value={newCategoryName}
+                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                        className="mini-input"
+                                        autoFocus
+                                    />
+                                    <input
+                                        type="color"
+                                        value={newCategoryColor}
+                                        onChange={(e) => setNewCategoryColor(e.target.value)}
+                                        className="mini-color-picker"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn-icon-success"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (newCategoryName.trim()) {
+                                                onAddCategory({ name: newCategoryName, color: newCategoryColor });
+                                                setCategory(newCategoryName); // Auto-select new category
+                                                setIsAddingCategory(false);
+                                                setNewCategoryName('');
+                                            }
+                                        }}
+                                    >
+                                        <Check size={16} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-icon-cancel"
+                                        onClick={() => setIsAddingCategory(false)}
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="subtask-label">Checklist ({subtasks.filter(s => s.completed).length}/{subtasks.length})</label>
+                        <div className="subtask-list">
+                            {subtasks.map((sub, index) => (
+                                <div key={index} className="subtask-item animate-slide-up">
+                                    <button
+                                        type="button"
+                                        className={`checkbox-circle ${sub.completed ? 'checked' : ''}`}
+                                        onClick={() => toggleSubtask(index)}
+                                    >
+                                        {sub.completed && <Check size={12} />}
+                                    </button>
+                                    <span className={sub.completed ? 'completed-text' : ''}>{sub.title}</span>
+                                    <button
+                                        type="button"
+                                        className="btn-icon-danger small"
+                                        onClick={() => removeSubtask(index)}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="add-subtask-row">
+                            <input
+                                type="text"
+                                placeholder="Adicionar item..."
+                                value={newSubtaskTitle}
+                                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddSubtask(e);
+                                    }
+                                }}
+                            />
+                            <button type="button" onClick={handleAddSubtask} className="btn-icon-primary">
+                                <Plus size={18} />
+                            </button>
                         </div>
                     </div>
 

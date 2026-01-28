@@ -1,3 +1,44 @@
+/* Modal Overlay & Animation */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* Mobile bottom sheet style */
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+@media (min-width: 768px) {
+    .modal-overlay {
+        align-items: center;
+    }
+}
+
+.modal-content {
+    background-color: var(--bg-primary);
+    width: 100%;
+    max-width: 500px;
+    border-radius: 24px 24px 0 0;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-xl);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+    .modal-content {
+        border-radius: 24px;
+        padding: 2rem;
+    }
+}
+
+/* Header */
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -11,81 +52,51 @@
     gap: 1rem;
 }
 
+.modal-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
 .btn-icon-danger {
     background: none;
     border: none;
     color: #ef4444;
-    /* Red-500 */
     cursor: pointer;
     padding: 0.5rem;
-    border-radius: var(--radius-md);
-    transition: background-color 0.2s;
+    border-radius: 8px;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .btn-icon-danger:hover {
-    background-color: #fef2f2;
-    /* Red-50 */
+    background-color: #fee2e2;
 }
 
-/* Rest is same as before if not overridden */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background: white;
-    padding: 2rem;
-    border-radius: var(--radius-lg);
-    width: 100%;
-    max-width: 500px;
-    box-shadow: var(--shadow-lg);
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-secondary);
-}
-
-.task-input-lg {
-    width: 100%;
-    font-size: 1.5rem;
-    padding: 0.5rem;
-    border: none;
-    border-bottom: 2px solid transparent;
-    transition: border-color 0.2s;
-}
-
-.task-input-lg:focus {
-    outline: none;
-    border-bottom-color: var(--accent-color);
-}
-
+/* Form Styles */
 .form-group {
     margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
 }
 
 .form-row {
@@ -94,36 +105,195 @@
     gap: 1rem;
 }
 
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.task-input-lg {
+    width: 100%;
+    border: none;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: transparent;
+    padding: 0.5rem 0;
+}
+
+.task-input-lg:focus {
+    outline: none;
+}
+
+.task-input-lg::placeholder {
+    color: var(--text-tertiary);
+}
+
 input[type="date"],
 input[type="time"] {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
     font-family: inherit;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
 }
 
+input[type="date"]:focus,
+input[type="time"]:focus,
+.custom-select:focus {
+    border-color: var(--accent-color);
+}
+
+.custom-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+    /* Remove default arrow */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}
+
+/* Fix for dark mode specific backgrounds if needed */
+[data-theme='dark'] .custom-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f1f5f9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-group.full-width {
+    grid-column: span 2;
+}
+
+.input-icon {
+    display: none;
+    /* For now, labels handle icons */
+}
+
+/* Category Chips */
 .category-select {
     display: flex;
-    gap: 0.5rem;
     flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
 }
 
 .category-chip {
     padding: 0.5rem 1rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 9999px;
-    background: white;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.category-chip:hover {
+    background-color: var(--border-color);
 }
 
 .category-chip.selected {
-    background-color: var(--accent-color);
-    color: white;
-    border-color: var(--accent-color);
+    /* Colors are handled dynamically via style prop now */
+    border-color: transparent;
+    font-weight: 600;
 }
 
+/* Add Category Mini Form */
+.add-category-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--bg-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    border: 1px solid var(--accent-color);
+}
+
+.mini-input {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    width: 80px;
+    outline: none;
+}
+
+.mini-color-picker {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.mini-color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.mini-color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+.btn-icon-success,
+.btn-icon-cancel {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.btn-icon-success {
+    color: #10b981;
+}
+
+.btn-icon-success:hover {
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.btn-icon-cancel {
+    color: #ef4444;
+}
+
+.btn-icon-cancel:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Footer */
 .modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -133,18 +303,130 @@ input[type="time"] {
 
 .btn-cancel {
     padding: 0.75rem 1.5rem;
+    border: none;
     background: none;
-    border: 1px solid #e2e8f0;
-    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-weight: 500;
     cursor: pointer;
+    border-radius: 12px;
+}
+
+.btn-cancel:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
 .btn-save {
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 2rem;
+    border: none;
     background-color: var(--accent-color);
     color: white;
-    border: none;
-    border-radius: var(--radius-md);
+    font-weight: 600;
     cursor: pointer;
-    font-weight: 500;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
+
+/* Subtasks */
+.subtask-label {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.subtask-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.subtask-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background-color: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.checkbox-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.checkbox-circle.checked {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.subtask-item span {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.subtask-item span.completed-text {
+    text-decoration: line-through;
+    color: var(--text-tertiary);
+}
+
+.add-subtask-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.add-subtask-row input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.add-subtask-row input:focus {
+    border-color: var(--accent-color);
+}
+
+.btn-icon-primary {
+    background-color: var(--bg-secondary);
+    color: var(--accent-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon-primary:hover {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.btn-icon-danger.small {
+    padding: 4px;
 }

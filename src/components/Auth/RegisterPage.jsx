@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { User, Mail, Lock, ArrowRight, Layout, AlertCircle } from 'lucide-react';
 import { AuthService } from '../../services/auth';
 import './Auth.css';
 
@@ -22,47 +23,66 @@ const RegisterPage = ({ onLogin, onNavigateLogin }) => {
 
     return (
         <div className="auth-container">
-            <div className="auth-card animate-fade-in">
+            <div className="auth-card animate-slide-up">
                 <div className="auth-header">
+                    <div className="auth-logo">
+                        <Layout size={48} />
+                    </div>
                     <h1>Criar Conta</h1>
                     <p>Comece a planejar seu futuro hoje.</p>
                 </div>
 
-                {error && <div className="auth-error">{error}</div>}
+                {error && (
+                    <div className="auth-error animate-fade-in">
+                        <AlertCircle size={18} />
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Nome</label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            placeholder="Seu nome"
-                            required
-                        />
+                        <div className="input-wrapper">
+                            <User size={18} className="input-icon-left" />
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                placeholder="Seu nome"
+                                required
+                            />
+                        </div>
                     </div>
                     <div className="form-group">
                         <label>E-mail</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="seu@email.com"
-                            required
-                        />
+                        <div className="input-wrapper">
+                            <Mail size={18} className="input-icon-left" />
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                placeholder="seu@email.com"
+                                required
+                            />
+                        </div>
                     </div>
                     <div className="form-group">
                         <label>Senha</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            placeholder="********"
-                            required
-                        />
+                        <div className="input-wrapper">
+                            <Lock size={18} className="input-icon-left" />
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder="********"
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <button type="submit" className="btn-primary full-width">Criar Conta</button>
+                    <button type="submit" className="btn-primary full-width">
+                        Criar Conta <ArrowRight size={18} />
+                    </button>
                 </form>
 
                 <div className="auth-footer">
