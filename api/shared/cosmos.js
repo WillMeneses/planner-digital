@@ -1,19 +1,20 @@
 const { CosmosClient } = require("@azure/cosmos");
 
-let client = null;
-let container = null;
+let client = null; // Keep client as it's not part of the requested change to be cached per container
+const containerCache = {};
 
 const DB_NAME = "planner-app";
-const CONTAINER_NAME = "tasks";
+// CONTAINER_NAME is no longer a fixed global constant as it's passed dynamically
 
-async function getContainer() {
-    if (container) return container;
+async function getContainer(containerName = "tasks") {
+    if (containerCache[containerName]) return containerCache[containerName];
 
     // Tenta conectar com a Primary
     try {
-        console.log("Connecting with PRIMARY string...");
-        container = await initConnection(process.env.PRIMARY_COSMOSDB_CONNECTION_STRING);
-        return container;
+        console.log(`Connecting to container '${containerName}' with PRIMARY...`);
+        const c = await initConnection(process.env.PRIMARY_COSMOSDB_CONNECTION_STRING, containerName);
+        containerCache[containerName] = c;
+        return c;
     } catch (error) {
         console.error("Primary connection failed:", error.message);
 
@@ -21,34 +22,37 @@ async function getContainer() {
         if (process.env.SECONDARY_COSMOSDB_CONNECTION_STRING) {
             console.log("Falling back to SECONDARY string...");
             try {
-                container = await initConnection(process.env.SECONDARY_COSMOSDB_CONNECTION_STRING);
-                return container;
+                const c = await initConnection(process.env.SECONDARY_COSMOSDB_CONNECTION_STRING, containerName);
+                containerCache[containerName] = c;
+                return c;
             } catch (secError) {
                 console.error("Secondary connection also failed:", secError.message);
-                throw secError; // Desiste se as duas falharem
+                throw secError;
             }
         }
         throw error;
     }
 }
 
-async function initConnection(connectionString) {
+async function initConnection(connectionString, containerName) {
     if (!connectionString) throw new Error("Connection string is empty");
 
     const tempClient = new CosmosClient(connectionString);
-
-    // Cria o Database se não existir
     const { database } = await tempClient.databases.createIfNotExists({ id: DB_NAME });
 
-    // Cria o Container (Tabela) se não existir
-    // PartitionKey /userId é crucial para separar dados de cada usuário
-    const { container: c } = await database.containers.createIfNotExists({
-        id: CONTAINER_NAME,
-        partitionKey: "/userId"
+    // Define PK based on container name (Fallback mapping)
+    // Keep in sync with init-db.js
+    let pk = "/userId";
+    if (containerName === "users") pk = "/email";
+    if (containerName === "subtasks") pk = "/taskId";
+
+    const { container } = await database.containers.createIfNotExists({
+        id: containerName,
+        partitionKey: pk
     });
 
-    client = tempClient; // Salva o cliente globalmente
-    return c;
+    client = tempClient;
+    return container;
 }
 
 module.exports = { getContainer };
