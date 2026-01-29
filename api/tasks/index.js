@@ -14,6 +14,15 @@ module.exports = async function (context, req) {
 
     const container = await getContainer();
 
+    // Validate Env Vars (Debugging)
+    if (!process.env.PRIMARY_COSMOSDB_CONNECTION_STRING) {
+        context.res = {
+            status: 500,
+            body: "Server Error: PRIMARY_COSMOSDB_CONNECTION_STRING is missing in Application Settings."
+        };
+        return;
+    }
+
     try {
         switch (req.method) {
             case "GET":
@@ -72,7 +81,7 @@ module.exports = async function (context, req) {
         context.log.error("Cosmos DB Error:", error);
         context.res = {
             status: 500,
-            body: { error: error.message }
+            body: `Server Error Details: ${error.message}`
         };
     }
 }
