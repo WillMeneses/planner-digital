@@ -1,87 +1,90 @@
-const { getContainer } = require("../shared/cosmos");
-
 module.exports = async function (context, req) {
-    // Pega o ID do usuário autenticado (injetado pelo SWA)
-    // Se estiver rodando local sem emulador SWA, usamos 'dev-user'
-    const header = req.headers['x-ms-client-principal'];
-    let userId = 'dev-user';
-    if (header) {
-        const encoded = Buffer.from(header, 'base64');
-        const decoded = encoded.toString('ascii');
-        const clientPrincipal = JSON.parse(decoded);
-        userId = clientPrincipal.userId;
-    }
+    context.log("Azure Function: Tasks API triggered.");
 
-    const container = await getContainer();
-
-    // Validate Env Vars (Debugging)
-    if (!process.env.PRIMARY_COSMOSDB_CONNECTION_STRING) {
-        context.res = {
-            status: 500,
-            body: "Server Error: PRIMARY_COSMOSDB_CONNECTION_STRING is missing in Application Settings."
-        };
-        return;
-    }
+    // Default Error Response
+    const errorResponse = (status, message, details = "") => ({
+        status: status,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: message, details: details })
+    });
 
     try {
-        switch (req.method) {
+        // Lazy Load to catch initialization errors
+        let cosmos;
+        try {
+            cosmos = require("../shared/cosmos");
+        } catch (modError) {
+            return context.res = errorResponse(500, "Failed to load cosmos module", modError.message);
+        }
+
+        const { getContainer } = cosmos;
+
+        // Validation Env Var
+        if (!process.env.PRIMARY_COSMOSDB_CONNECTION_STRING) {
+            return context.res = errorResponse(500, "Missing Connection String in App Settings");
+        }
+
+        const header = req.headers['x-ms-client-principal'];
+        let userId = 'dev-user';
+        if (header) {
+            try {
+                const encoded = Buffer.from(header, 'base64');
+                const decoded = encoded.toString('ascii');
+                const clientPrincipal = JSON.parse(decoded);
+                userId = clientPrincipal.userId;
+            } catch (authError) {
+                console.warn("Auth parse failed, defaulting to dev-user", authError);
+            }
+        }
+
+        context.log("Connecting to Database...");
+        const container = await getContainer("tasks");
+        context.log("Database connected.");
+
+        const { method } = req;
+
+        switch (method) {
             case "GET":
-                // Ler TODAS as tarefas desse usuário
                 const { resources: tasks } = await container.items
                     .query({
                         query: "SELECT * from c WHERE c.userId = @userId",
                         parameters: [{ name: "@userId", value: userId }]
                     })
                     .fetchAll();
-
-                context.res = { status: 200, body: tasks };
+                context.res = { status: 200, body: tasks }; // SWA handles JSON array automatically
                 break;
 
             case "POST":
-                // Criar Nova Tarefa
                 const newTask = {
                     ...req.body,
-                    userId: userId, // Garante que a tarefa é dona desse user
+                    userId: userId,
                     createdAt: new Date().toISOString()
                 };
-                // Se não vier ID, o Cosmos gera um, mas se o app mandar (UUID), usamos ele
                 const { resource: created } = await container.items.create(newTask);
+                context.res = errorResponse(201, "Created", created); // Reuse helper but pass object as 'details' for body
+                // Actually, clean response for success:
                 context.res = { status: 201, body: created };
                 break;
 
             case "PUT":
-                // Atualizar Tarefa
-                const taskToUpdate = {
-                    ...req.body,
-                    userId: userId
-                };
-                // Atualiza (Replace)
-                const { resource: updated } = await container
-                    .item(taskToUpdate.id, userId)
-                    .replace(taskToUpdate);
+                const taskToUpdate = { ...req.body, userId: userId };
+                const { resource: updated } = await container.item(taskToUpdate.id, userId).replace(taskToUpdate);
                 context.res = { status: 200, body: updated };
                 break;
 
             case "DELETE":
-                // Deletar Tarefa
                 const taskId = req.query.id || req.body.id;
-                if (!taskId) {
-                    context.res = { status: 400, body: "Task ID required" };
-                    return;
-                }
+                if (!taskId) return context.res = errorResponse(400, "Task ID required");
                 await container.item(taskId, userId).delete();
-                context.res = { status: 204 }; // No Content
+                context.res = { status: 204 };
                 break;
 
             default:
-                context.res = { status: 405, body: "Method Not Allowed" };
+                context.res = errorResponse(405, "Method Not Allowed");
         }
 
     } catch (error) {
-        context.log.error("Cosmos DB Error:", error);
-        context.res = {
-            status: 500,
-            body: `Server Error Details: ${error.message}`
-        };
+        context.log.error("Fatal Function Error:", error);
+        context.res = errorResponse(500, "Internal Server Exception", error.message);
     }
-}
+};
