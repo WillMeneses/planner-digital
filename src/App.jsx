@@ -114,7 +114,7 @@ function App() {
             setEditingTask(null);
         } catch (error) {
             console.error("Save failed:", error);
-            alert("Erro ao salvar. Verifique sua conexão.");
+            alert(`Erro ao salvar: ${error.message}`);
         }
     };
 
