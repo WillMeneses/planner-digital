@@ -14,7 +14,10 @@ export const DataService = {
             try {
                 const response = await fetch(`${APP_CONFIG.API_URL}/tasks`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': userId
+                    },
                     body: JSON.stringify({ ...task, userId })
                 });
 
@@ -44,35 +47,40 @@ export const DataService = {
 
     updateTask: async (taskId, updates) => {
         if (useCloud()) {
-            // Need to fetch current task first to merge updates if API requires full object
-            // For now assuming we send what we have, but Cosmos usually wants "id" and "partitionKey"
-            // We will simplify: Backend handles specific updates or we send merged object
-            // For this version (simple), we might need to send the whole object or just patch.
-            // Let's assume our backend handles basic updates (PUT usually replaces).
-            // Strategy: We will do a merge on client or server. 
-            // For now, let's just send the ID and updates (Server needs to handle partials or we fetch-merge-save).
-            // *Simpler approach for this step*: Assume backend does replace. 
-            // We'll update the 'PUT' case in DataService later if we need full object.
+            // Needed to pass UserId for Context, but updateTask signature usually doesn't have it.
+            // We need to retrieve it from LocalStorage auth or pass it.
+            // For now, let's assume the body updates *might* have it, OR we fetch current user from storage here.
+            // Safest: AuthService.getCurrentUser().id
+            const user = JSON.parse(localStorage.getItem('planner_current_user'));
+            const userId = user ? user.id : 'dev-user';
 
             // To be safe with Cosmos Replace: fetch -> merge -> put
-            // Or change backend to PATCH. 
+            // Or change backend to PATCH.
             // Let's stick to Dexie parity: update(id, changes).
 
             // Let's do a client-side merge for safety:
             // 1. We might not have the full task here.
-            // Let's simply send what we have and let backend handle it OR 
+            // Let's simply send what we have and let backend handle it OR
             // Better: Use PATCH method or assume PUT merges?
             // Standard Entity: PUT = Replace.
             // Let's try sending updates and rely on backend for now, or fetch first.
 
             // Actually, for efficency, let's treat update as "Patch" logic here.
             // Since our backend PUT does a replace, we ideally need the full object.
-            // BUT, for speed, let's keep it simple: 
+            // BUT, for speed, let's keep it simple:
             const response = await fetch(`${APP_CONFIG.API_URL}/tasks`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId
+                },
                 body: JSON.stringify({ id: taskId, ...updates })
             });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Erro API (PUT tasks): ${response.status} - ${text}`);
+            }
             return await response.json();
         }
         return await db.tasks.update(Number(taskId), updates);
@@ -80,9 +88,18 @@ export const DataService = {
 
     deleteTask: async (taskId) => {
         if (useCloud()) {
-            await fetch(`${APP_CONFIG.API_URL}/tasks?id=${taskId}`, {
-                method: 'DELETE'
+            const user = JSON.parse(localStorage.getItem('planner_current_user'));
+            const userId = user ? user.id : 'dev-user';
+
+            const response = await fetch(`${APP_CONFIG.API_URL}/tasks?id=${taskId}`, {
+                method: 'DELETE',
+                headers: { 'X-User-Id': userId }
             });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Erro API (DELETE tasks): ${response.status} - ${text}`);
+            }
             return;
         }
         return await db.tasks.delete(Number(taskId));
@@ -90,8 +107,10 @@ export const DataService = {
 
     toggleTaskCompletion: async (taskId, currentStatus) => {
         if (useCloud()) {
-            /* 
-             NOTE: Our current API PUT replaces the whole item. 
+            const user = JSON.parse(localStorage.getItem('planner_current_user'));
+            const userId = user ? user.id : 'dev-user';
+            /*
+             NOTE: Our current API PUT replaces the whole item.
              Ideally we should use PATCH or fetch-update-save.
              We will fix the backend to support partial updates later if needed.
              For now, we rely on the implementation.
@@ -99,9 +118,17 @@ export const DataService = {
             const task = { id: taskId, completed: !currentStatus };
             const response = await fetch(`${APP_CONFIG.API_URL}/tasks`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId
+                },
                 body: JSON.stringify(task)
             });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Erro API (Toggle Task): ${response.status} - ${text}`);
+            }
             return await response.json();
         }
         return await db.tasks.update(Number(taskId), { completed: !currentStatus });
@@ -109,8 +136,14 @@ export const DataService = {
 
     getTasks: async (userId) => {
         if (useCloud()) {
-            const response = await fetch(`${APP_CONFIG.API_URL}/tasks`);
-            if (!response.ok) return [];
+            const response = await fetch(`${APP_CONFIG.API_URL}/tasks`, {
+                headers: { 'X-User-Id': userId }
+            });
+
+            if (!response.ok) {
+                console.error("Failed to fetch tasks:", response.status, await response.text());
+                return [];
+            }
             return await response.json();
         }
         return await db.tasks.where('userId').equals(Number(userId)).toArray();
