@@ -153,19 +153,63 @@ export const DataService = {
     // For now, Categories stay Local or we accept they won't sync until we add API endpoints for them.
     // To assume MVP success: We keep Categories LOCAL for now to avoid breaking UI.
 
+    // --- Category Methods (Cloud Supported) ---
+
     getCategories: async (userId) => {
+        if (useCloud()) {
+            const response = await fetch(`${APP_CONFIG.API_URL}/categories`, {
+                headers: { 'X-User-Id': userId }
+            });
+            if (!response.ok) return [];
+            return await response.json();
+        }
         return await db.categories.where('userId').equals(Number(userId)).toArray();
     },
 
     addCategory: async (userId, category) => {
+        if (useCloud()) {
+            const response = await fetch(`${APP_CONFIG.API_URL}/categories`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId
+                },
+                body: JSON.stringify({ ...category, userId })
+            });
+            return await response.json();
+        }
         return await db.categories.add({ ...category, userId: Number(userId) });
     },
 
     updateCategory: async (categoryId, categoryData) => {
+        if (useCloud()) {
+            const user = JSON.parse(localStorage.getItem('planner_current_user'));
+            const userId = user ? user.id : 'dev-user';
+
+            const response = await fetch(`${APP_CONFIG.API_URL}/categories`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId
+                },
+                body: JSON.stringify({ id: categoryId, ...categoryData })
+            });
+            return await response.json();
+        }
         return await db.categories.update(Number(categoryId), categoryData);
     },
 
     deleteCategory: async (categoryId) => {
+        if (useCloud()) {
+            const user = JSON.parse(localStorage.getItem('planner_current_user'));
+            const userId = user ? user.id : 'dev-user';
+
+            await fetch(`${APP_CONFIG.API_URL}/categories?id=${categoryId}`, {
+                method: 'DELETE',
+                headers: { 'X-User-Id': userId }
+            });
+            return;
+        }
         return await db.categories.delete(Number(categoryId));
     },
 
