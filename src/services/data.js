@@ -125,9 +125,10 @@ export const DataService = {
 
     saveTaskWithSubtasks: async (userId, taskData, subtasks) => {
         if (useCloud()) {
-            // Cloud version: Just save the task for now. 
-            // Subtasks need a relational model or embedding in Cosmos (Embedding is better).
-            // Doing SIMPLE save for MVP:
+            // Cloud version: Simple Save (No subtasks relational yet)
+            if (taskData.id) {
+                return await DataService.updateTask(taskData.id, taskData);
+            }
             return await DataService.addTask(userId, taskData);
         }
 
