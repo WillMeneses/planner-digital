@@ -10,12 +10,34 @@ export const DataService = {
 
     addTask: async (userId, task) => {
         if (useCloud()) {
-            const response = await fetch(`${APP_CONFIG.API_URL}/tasks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...task, userId }) // API ignores userId manual payload but good for debug
-            });
-            return await response.json();
+            console.log("DataService: Starting addTask fetch...");
+            try {
+                const response = await fetch(`${APP_CONFIG.API_URL}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...task, userId })
+                });
+
+                console.log("DataService: Fetch completed. Status:", response.status);
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Erro API (POST tasks): ${response.status} - ${text}`);
+                }
+
+                console.log("DataService: Parsing JSON...");
+                try {
+                    const json = await response.json();
+                    console.log("DataService: Parse JSON success");
+                    return json;
+                } catch (parseError) {
+                    console.error("DataService: JSON Parse Error", parseError);
+                    throw new Error(`Erro Parse JSON: ${parseError.message}`);
+                }
+            } catch (networkError) {
+                console.error("DataService: Network/Fetch Error", networkError);
+                throw networkError; // Re-throw to App.jsx
+            }
         }
         return await db.tasks.add({ ...task, userId: Number(userId) });
     },
