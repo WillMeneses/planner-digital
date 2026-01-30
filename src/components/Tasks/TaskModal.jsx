@@ -3,7 +3,10 @@ import { X, Calendar as CalendarIcon, Clock, Tag, Trash2, Plus, Check, Repeat } 
 import './TaskModal.css';
 
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db';
+import { db } from '../../db'; // Still needed for some local fallbacks? No, DataService abstracts it.
+// Actually, let's remove direct DB access if possible, or keep for now if unsure.
+// But we definitely need DataService.
+import { DataService } from '../../services/data';
 
 const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit, categories = [], onAddCategory }) => {
     const [title, setTitle] = useState('');
