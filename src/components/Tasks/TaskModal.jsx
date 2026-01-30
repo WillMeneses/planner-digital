@@ -18,7 +18,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit, categories =
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
 
-    const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+
 
     // Subtasks State
     const [subtasks, setSubtasks] = useState([]);
