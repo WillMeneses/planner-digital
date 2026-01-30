@@ -18,6 +18,12 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit, categories =
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
 
+    const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+
+    // Subtasks State
+    const [subtasks, setSubtasks] = useState([]);
+    const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
     // React State for loading subtasks (Cloud + Local Compat)
     // const existingSubtasks = useLiveQuery(...) is Local only.
 
