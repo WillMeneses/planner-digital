@@ -12,6 +12,8 @@ import LoginPage from './components/Auth/LoginPage';
 import RegisterPage from './components/Auth/RegisterPage';
 import { AuthService } from './services/auth';
 import { DataService } from './services/data';
+import { useTasks } from './hooks/useTasks';
+import { useCategories } from './hooks/useCategories';
 import './App.css';
 
 function App() {
@@ -39,30 +41,34 @@ function App() {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
     };
 
-    // Reactive State replaces useLiveQuery for Cloud compatibility
-    const [tasks, setTasks] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    // Custom Hooks for Data Management
+    const {
+        tasks,
+        fetchTasks,
+        addTask: saveTask,
+        updateTask, // Added updateTask for moveTask
+        deleteTask,
+        toggleTask,
+        handleRecurringCompletion, // Added for recurring tasks
+        toggleSubtask, // Added for subtask management
+        deleteSubtask // Added for subtask management
+    } = useTasks(user);
 
-    const refreshData = () => setRefreshTrigger(prev => prev + 1);
+    const {
+        categories,
+        fetchCategories,
+        addCategory,
+        updateCategory,
+        deleteCategory
+    } = useCategories(user);
 
-    // Fetch Data Effect (Works for both Local and Cloud via DataService)
+    // Initial Fetch
     useEffect(() => {
-        const fetchData = async () => {
-            if (!user) return;
-            try {
-                const [loadedTasks, loadedCategories] = await Promise.all([
-                    DataService.getTasks(user.id),
-                    DataService.getCategories(user.id)
-                ]);
-                setTasks(loadedTasks || []);
-                setCategories(loadedCategories || []);
-            } catch (error) {
-                console.error("Failed to load data:", error);
-            }
-        };
-        fetchData();
-    }, [user, currentView, refreshTrigger]);
+        if (user) {
+            fetchTasks();
+            fetchCategories();
+        }
+    }, [user, fetchTasks, fetchCategories, currentView]); // Refetch on view change? Maybe not needed if state is robust.
 
     // Seed default categories (Local Mode Only Check usually, but safe to keep)
     useEffect(() => {
@@ -88,15 +94,14 @@ function App() {
         setAuthView('login');
     };
 
-    const toggleTask = async (id) => {
+    const handleToggleTask = async (id) => {
         const task = tasks.find(t => t.id === id);
         if (task) {
             if (!task.completed && task.recurring && task.recurring !== 'none') {
-                await DataService.handleRecurringCompletion(task);
+                await handleRecurringCompletion(task); // Use hook's function
             } else {
-                await DataService.toggleTaskCompletion(id, task.completed);
+                await toggleTask(id, task.completed); // Use hook's function
             }
-            refreshData();
         }
     };
 
@@ -108,24 +113,20 @@ function App() {
     const handleSaveTask = async (taskData, subtasks = []) => {
         if (!user) return;
         try {
-            await DataService.saveTaskWithSubtasks(user.id, taskData, subtasks);
-            refreshData();
+            // saveTask hook handles DataService.saveTaskWithSubtasks
+            await saveTask(taskData, subtasks);
             setIsModalOpen(false);
             setEditingTask(null);
         } catch (error) {
             console.error("Save failed:", error);
-            alert(`Erro detalhado: ${error.message}`);
+            alert(`Erro: ${error.message}`);
         }
     };
 
     const handleToggleSubtask = async (subtask) => {
         /* Cloud Compatibility: We need taskId to update in Cosmos */
         try {
-            await DataService.toggleSubtask(subtask.id, !subtask.completed, subtask.taskId);
-            // Optimistic update or refresh
-            // This part needs to update the 'tasks' state, not a local 'subtasks' state
-            // For now, a full refresh is simpler given the current state structure
-            refreshData();
+            await toggleSubtask(subtask.id, !subtask.completed, subtask.taskId);
         } catch (error) {
             console.error("Failed to toggle subtask", error);
         }
@@ -133,10 +134,7 @@ function App() {
 
     const handleDeleteSubtask = async (subtask) => {
         try {
-            await DataService.deleteSubtask(subtask.id, subtask.taskId);
-            // This part needs to update the 'tasks' state, not a local 'subtasks' state
-            // For now, a full refresh is simpler given the current state structure
-            refreshData();
+            await deleteSubtask(subtask.id, subtask.taskId);
         } catch (error) {
             console.error("Failed to delete subtask", error);
         }
@@ -151,8 +149,7 @@ function App() {
     };
 
     const moveTask = async (taskId, newDate, newTime) => {
-        await DataService.updateTask(taskId, { date: newDate, time: newTime });
-        refreshData();
+        await updateTask({ id: taskId, date: newDate, time: newTime });
     };
 
     const handleAddCategory = async (category) => {
