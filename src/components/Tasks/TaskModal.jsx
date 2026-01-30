@@ -15,24 +15,28 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, taskToEdit, categories =
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
 
-    // Subtasks State (Local management before save)
-    const [subtasks, setSubtasks] = useState([]);
-    const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+    // React State for loading subtasks (Cloud + Local Compat)
+    // const existingSubtasks = useLiveQuery(...) is Local only.
 
-    // Fetch existing subtasks when editing
-    const existingSubtasks = useLiveQuery(
-        () => taskToEdit ? db.subtasks.where('taskId').equals(taskToEdit.id).toArray() : [],
-        [taskToEdit]
-    );
-
-    // Sync local state with DB when opening edit
     useEffect(() => {
-        if (isOpen && existingSubtasks) {
-            setSubtasks(existingSubtasks);
-        } else if (isOpen && !taskToEdit) {
-            setSubtasks([]);
-        }
-    }, [isOpen, existingSubtasks, taskToEdit]);
+        const loadSubtasks = async () => {
+            // If we have a task to edit, load its subtasks
+            if (isOpen && taskToEdit && taskToEdit.id) {
+                try {
+                    // Note: DataService.getSubtasks abstracts Local vs Cloud
+                    const loaded = await DataService.getSubtasks(taskToEdit.id);
+                    setSubtasks(loaded || []);
+                } catch (e) {
+                    console.error("Failed to load subtasks", e);
+                    setSubtasks([]);
+                }
+            } else if (isOpen && !taskToEdit) {
+                // Reset for new task
+                setSubtasks([]);
+            }
+        };
+        loadSubtasks();
+    }, [isOpen, taskToEdit]);
 
     useEffect(() => {
         if (isOpen) {
