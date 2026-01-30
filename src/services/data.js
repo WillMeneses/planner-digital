@@ -213,13 +213,51 @@ export const DataService = {
         return await db.categories.delete(Number(categoryId));
     },
 
-    // --- Subtask Methods (Complex - Requires API updates) ---
-    // Deferred: Subtasks logic is complex with transactions.
-    // For Phase 1 of Cloud: We allow tasks but subtasks might be tricky without dedicated API.
-    // ... Keeping local implementation for now or we will error out on Cloud.
+    // --- Subtask Methods ---
 
     getSubtasks: async (taskId) => {
+        if (useCloud()) {
+            const response = await fetch(`${APP_CONFIG.API_URL}/subtasks?taskId=${taskId}`);
+            if (!response.ok) return [];
+            return await response.json();
+        }
         return await db.subtasks.where('taskId').equals(Number(taskId)).toArray();
+    },
+
+    addSubtask: async (taskId, title) => {
+        if (useCloud()) {
+            const response = await fetch(`${APP_CONFIG.API_URL}/subtasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ taskId, title, completed: false })
+            });
+            return await response.json();
+        }
+        return await db.subtasks.add({ taskId: Number(taskId), title, completed: false });
+    },
+
+    toggleSubtask: async (subtaskId, completed, taskId) => {
+        if (useCloud()) {
+            // Now we have taskId, we can make the cloud call
+            const response = await fetch(`${APP_CONFIG.API_URL}/subtasks`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: subtaskId, taskId, completed })
+            });
+            if (!response.ok) throw new Error("Failed to toggle subtask");
+            return await response.json();
+        }
+        return await db.subtasks.update(Number(subtaskId), { completed });
+    },
+
+    deleteSubtask: async (subtaskId, taskId) => {
+        if (useCloud()) {
+            await fetch(`${APP_CONFIG.API_URL}/subtasks?id=${subtaskId}&taskId=${taskId}`, {
+                method: 'DELETE'
+            });
+            return;
+        }
+        return await db.subtasks.delete(Number(subtaskId));
     },
 
     saveTaskWithSubtasks: async (userId, taskData, subtasks) => {

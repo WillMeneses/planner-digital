@@ -118,6 +118,30 @@ function App() {
         }
     };
 
+    const handleToggleSubtask = async (subtask) => {
+        /* Cloud Compatibility: We need taskId to update in Cosmos */
+        try {
+            await DataService.toggleSubtask(subtask.id, !subtask.completed, subtask.taskId);
+            // Optimistic update or refresh
+            // This part needs to update the 'tasks' state, not a local 'subtasks' state
+            // For now, a full refresh is simpler given the current state structure
+            refreshData();
+        } catch (error) {
+            console.error("Failed to toggle subtask", error);
+        }
+    };
+
+    const handleDeleteSubtask = async (subtask) => {
+        try {
+            await DataService.deleteSubtask(subtask.id, subtask.taskId);
+            // This part needs to update the 'tasks' state, not a local 'subtasks' state
+            // For now, a full refresh is simpler given the current state structure
+            refreshData();
+        } catch (error) {
+            console.error("Failed to delete subtask", error);
+        }
+    };
+
     const handleDeleteTask = async (taskId) => {
         if (!user) return;
         await DataService.deleteTask(taskId);
