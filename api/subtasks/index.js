@@ -1,5 +1,4 @@
-const { getContainer } = require("../shared/cosmos");
-
+// Lazy load cosmos inside the function to prevent cold start crashes
 module.exports = async function (context, req) {
     context.log("Azure Function: Subtasks API triggered.");
 
@@ -15,8 +14,11 @@ module.exports = async function (context, req) {
         }
 
         let cosmos;
-        try { cosmos = require("../shared/cosmos"); }
-        catch (e) { return context.res = errorResponse(500, "Failed to load cosmos", e.message); }
+        try {
+            cosmos = require("../shared/cosmos");
+        } catch (e) {
+            return context.res = errorResponse(500, "Failed to load cosmos module", e.message);
+        }
 
         const { getContainer } = cosmos;
         const container = await getContainer("subtasks");
