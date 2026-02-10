@@ -142,8 +142,7 @@ function App() {
 
     const handleDeleteTask = async (taskId) => {
         if (!user) return;
-        await DataService.deleteTask(taskId);
-        refreshData();
+        await deleteTask(taskId); // Uses hook
         setIsModalOpen(false);
         setEditingTask(null);
     };
@@ -154,20 +153,17 @@ function App() {
 
     const handleAddCategory = async (category) => {
         if (!user) return;
-        await DataService.addCategory(user.id, category);
-        refreshData();
+        await addCategory(category);
     };
 
     const handleUpdateCategory = async (categoryId, categoryData) => {
         if (!user) return;
-        await DataService.updateCategory(categoryId, categoryData);
-        refreshData();
+        await updateCategory(categoryId, categoryData);
     };
 
     const handleDeleteCategory = async (categoryId) => {
         if (!user) return;
-        await DataService.deleteCategory(categoryId);
-        refreshData();
+        await deleteCategory(categoryId);
     };
 
     const renderContent = () => {
